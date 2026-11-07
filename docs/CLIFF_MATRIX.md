@@ -216,23 +216,29 @@ failure.
 
 ## Reproduce-command skeleton
 
-Every `reproduce:` slot above is filled with an invocation of this shape.
-The bench plan supplies the concrete values; nothing is filled here.
+Every `reproduce:` slot above is filled with the exact invocation of the
+runner documented in [../afterlife/bench/README.md](../afterlife/bench/README.md).
+The bench plan supplies the concrete values; nothing is filled here. The
+shape, as the runner accepts it today (print the plan first with
+`--dry-run`; the printed plan is what goes in the slot):
 
 ```text
-afterlife bench \
-  --card <R1..R5> \
-  --model <M1|M2|M3> --revision <sha> --quant <q> \
-  --ctx <4096|16384|32768> \
-  --pp 512 --tg 128 --warmup 1 --runs 3 \
-  --power-cap <W> --clock-cap <MHz> \
-  [--serve-concurrency 8 --serve-prompts bench/fixtures/serve_prompts.jsonl] \
-  [--backend <cuda|hip|vulkan>] \
-  [--offload <split spec>]            # M3 only
-  --correctness bench/fixtures/ppl_text.txt bench/fixtures/answers.jsonl \
-  --reference bench/rows/R5/<model>/<date>.json \
-  --out bench/rows/<card>/<model>/<date>.json
+python -m afterlife.bench run [--dry-run] \
+  --backend <llamacpp|vllm> \
+  --model <M1|M2|M3 id> --quant <q> \
+  --gpu-arch <sm_70|sm_61|gfx906|sm_86> \
+  --model-path <path to pinned weights> \
+  --json bench/rows/<card>/<model>/<date>.json \
+  --csv  bench/rows/<card>/<model>/<date>.csv
 ```
+
+The row the runner writes already carries pp512 / tg128 at 4k / 16k / 32k,
+the 8-concurrent serving aggregate (vLLM adapter only; llama.cpp reports
+`None` rather than a fake), the correctness-gate verdict against the R5
+reference row, driver, power cap, methodology and a `reproduce_cmd`. The
+table builder (`python -m afterlife.bench table`) refuses any row without
+one. Vulkan cells (Column E) and the offload split (B.3) are recorded via
+the backend/flags in the same row; the exact flags are the bench plan's.
 
 Stock-latest cells (Column A) use the stock tool directly, and the slot
 records the exact command *and* the exact version:

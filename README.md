@@ -176,6 +176,12 @@ in.
 The command skeleton per cell is in
 [docs/CLIFF_MATRIX.md](docs/CLIFF_MATRIX.md). Each one is a
 `reproduce:` slot that the bench plan fills in with the exact invocation.
+The runner itself is documented in
+[afterlife/bench/README.md](afterlife/bench/README.md); its table builder
+refuses to emit a row that has no `reproduce_cmd`, so the "no command, no
+number" rule is enforced by code, not by reviewers remembering it. The
+runner's own CPU self-test uses a mock backend whose throughput is
+synthetic filler and is never a measurement of any card.
 
 ---
 
