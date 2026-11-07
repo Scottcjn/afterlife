@@ -29,6 +29,12 @@ stock_latest:
   torch: "2.15.0"
   vllm: "0.32.0"
   ollama: "0.40.15"
+  # Current-latest reference for the "install latest and it breaks" cliffs.
+  # rocm 7.x is confirmed current (ROCm 7.2.x in AMD docs); flash_attn 2.x is
+  # the current FlashAttention-2 line. Both sit past their cliffs, so a
+  # not-installed card still gets the correct "latest would break you" verdict.
+  rocm: "7.2.0"
+  flash_attn: "2.8.0"
 
 cliffs:
   - id: cuda13_drops_pre_turing
