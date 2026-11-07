@@ -293,11 +293,16 @@ def _import_version(module: str) -> str | None:
     return None
 
 
-def detect_environment(runner: Runner = real_runner) -> Environment:
+def detect_environment(
+    runner: Runner = real_runner,
+    importer: Callable[[str], str | None] = _import_version,
+) -> Environment:
     """Detect the full environment, wrapping every probe.
 
     ``runner`` is injectable for tests. Framework versions come from import
     first (torch, vllm), then a ``--version`` subprocess (ollama, llama.cpp).
+    ``importer`` is injectable too, so tests are not coupled to whatever
+    happens to be pip-installed in the host interpreter (e.g. a real torch).
     """
     env = Environment()
 
@@ -342,9 +347,9 @@ def detect_environment(runner: Runner = real_runner) -> Environment:
         env.rocm = parse_version_string(rocm_ver)
 
     # --- frameworks ----------------------------------------------------------
-    env.frameworks["torch"] = _import_version("torch")
-    env.frameworks["vllm"] = _import_version("vllm")
-    env.frameworks["flash_attn"] = _import_version("flash_attn")
+    env.frameworks["torch"] = importer("torch")
+    env.frameworks["vllm"] = importer("vllm")
+    env.frameworks["flash_attn"] = importer("flash_attn")
 
     ollama_v = runner(["ollama", "--version"])
     env.tools_present["ollama"] = ollama_v is not None

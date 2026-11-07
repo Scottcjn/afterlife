@@ -21,15 +21,28 @@ from afterlife.cliffs import (
     parse_version,
     version_ge,
 )
-from afterlife.detect import cc_to_sm, parse_lspci, parse_nvidia_smi, parse_rocminfo
+from afterlife.detect import (
+    cc_to_sm,
+    detect_environment,
+    parse_lspci,
+    parse_nvidia_smi,
+    parse_rocminfo,
+)
 from afterlife.doctor import render_human, render_json, run_doctor
 
 from . import fixtures as fx
 
 
-def _reports(outputs: dict[str, str | None]) -> list[GPUReport]:
+def _reports(
+    outputs: dict[str, str | None],
+    frameworks: dict[str, str | None] | None = None,
+) -> list[GPUReport]:
+    # Probe frameworks only through this explicit map, never the host venv,
+    # so results do not change when torch/vllm happen to be pip-installed.
+    fw = frameworks or {}
     runner = fx.make_runner(outputs)
-    _, _, reports = run_doctor(runner=runner, db=load_cliff_db())
+    env = detect_environment(runner=runner, importer=lambda mod: fw.get(mod))
+    _, _, reports = run_doctor(db=load_cliff_db(), env=env)
     return reports
 
 

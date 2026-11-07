@@ -23,10 +23,29 @@ def build_parser() -> argparse.ArgumentParser:
         help="detect GPUs/driver/toolkit/frameworks and report what will break + the fix",
     )
     doctor.add_argument("--json", action="store_true", help="emit machine-readable JSON")
+
+    # `bench` is delegated wholesale to afterlife.bench.cli (run/selftest/table).
+    # Registered here only so it appears in `afterlife --help`; main() intercepts
+    # the `bench` tail before argparse so the bench CLI parses its own flags.
+    bench = sub.add_parser(
+        "bench",
+        help="run the fixed-methodology benchmark; see `afterlife bench --help`",
+        add_help=False,
+    )
+    bench.add_argument("bench_args", nargs=argparse.REMAINDER, help=argparse.SUPPRESS)
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
+    argv = list(sys.argv[1:] if argv is None else argv)
+
+    # Hand the whole `bench ...` tail to the bench CLI so its subcommands and
+    # flags parse natively, instead of mirroring them in this parser.
+    if argv and argv[0] == "bench":
+        from .bench.cli import main as bench_main
+
+        return bench_main(argv[1:])
+
     parser = build_parser()
     args = parser.parse_args(argv)
 
