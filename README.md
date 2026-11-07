@@ -17,7 +17,9 @@ Read these before anything else. They are not footnotes.
    cell reads `TODO (pending bench)` and carries an empty `reproduce:` slot.
    A cell gets a number only when the command in its slot has been run and
    the JSON row from `afterlife bench` is checked in next to it. The
-   bench plan that fills the matrix is Scott's to run, not an agent's.
+   bench plan that fills the matrix
+   ([eval/BENCH_FLEET_PLAN.md](eval/BENCH_FLEET_PLAN.md)) is Scott's to run
+   on lab hardware, not an agent's.
 2. **The headline figure is an unpublished lab measurement.** "Gemma 4 26B at
    ~107 tok/s on a V100 SXM2 32 GB over an M.2 eGPU adapter" was observed
    once, in the Elyan Labs workshop, on a `llama-server` build with a 200 W /
@@ -85,8 +87,10 @@ Read these before anything else. They are not footnotes.
 | ROCm 7 | gfx906 unsupported | ROCm 6.4.x (+ restored Tensile) / TheRock 7.12 nightly |
 | Ollama 0.13 | gfx906 | 0.12.x, or llama.cpp HIP / Vulkan directly |
 
-The YAML database is versioned with the repo so a doctor run can be
-reproduced against the database revision it used.
+The YAML database lives at
+[afterlife/cliff_db.yaml](afterlife/cliff_db.yaml) and is versioned with
+the repo so a doctor run can be reproduced against the database revision it
+used.
 
 ---
 
@@ -222,9 +226,13 @@ Afterlife is a consolidation. The hard parts were done by:
 - **nlzy** — the pinned vLLM fork for gfx906.
 - **TheRock** — the ROCm-from-source build system that the 7.12 nightly
   path uses.
-- **Atlas3D** — upstream work named in the build rules; the exact component
-  Afterlife draws on is pinned in the manifests (TODO: state it precisely
-  there before v0.1 ships, so the credit is specific, not vague).
+- **Atlas3D** — named in the build rules as an sm_70 llama.cpp fork, but the
+  prior-art search ([docs/PRIOR_ART.md](docs/PRIOR_ART.md)) **could not
+  locate a repository** under that name. The credit stays here as a pointer
+  until a URL exists; nothing in the stack cites it yet.
+
+Full prior-art notes, with repo links, licenses and what each one gives
+us, are in [docs/PRIOR_ART.md](docs/PRIOR_ART.md).
 - **llama.cpp** (ggml-org) and the Vulkan backend it ships, which is the
   honest baseline for every AMD row.
 
