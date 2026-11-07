@@ -1,0 +1,27 @@
+LICENSE_RECEIPT.txt  (copy into each model folder; fill every field on download day)
+Lab rule: gated licenses are accepted by Scott, never by an agent.
+
+Repo id:              <org/name>
+Source URL:           <https://...>
+Exact revision sha:   <40-char commit sha>
+Download date (UTC):  <YYYY-MM-DDTHH:MM:SSZ>
+Account used:         <HF/GitHub account>
+License name:         <e.g. Apache-2.0, Gemma Terms of Use>
+License accepted by:  <Scott, if gated; else n/a>
+
+Files saved alongside weights (LICENSE*, NOTICE*, model card *.md):
+  <filename>  sha256: <hash>
+  <filename>  sha256: <hash>
+
+Weights files:
+  <filename>  sha256: <hash>
+
+Terms relied on:
+  Commercial-use threshold:  <none / details>
+  Output ownership:          <...>
+  Required disclosures/attribution: <...>
+  Prohibited uses:           <...>
+  Redistribution of weights: <allowed / not allowed / conditions>
+
+Notes (relicensing, pulled repo, etc.):
+  <...>

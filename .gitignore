@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+.ruff_cache/
+.mypy_cache/
+.pytest_cache/
+# model weights are never committed; keep only license receipts
+models/*
+!models/LICENSE_RECEIPT_TEMPLATE.txt
+*.gguf
+*.safetensors

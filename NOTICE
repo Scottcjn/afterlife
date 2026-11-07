@@ -1,0 +1,18 @@
+Afterlife (afterlife-gpu)
+Copyright 2026 Elyan Labs
+
+Licensed under the Apache License, Version 2.0.
+
+Afterlife consolidates and pins work done by others. It does not replace it.
+Components below keep their own licenses; check each upstream before redistributing.
+
+  - 1Cat-vLLM: SM70 (V100) vLLM build path.
+  - mixa3607: gfx906 (MI50) ROCm/Tensile and container recipes.
+  - nlzy: gfx906 vLLM fork.
+  - ROCm/TheRock: ROCm nightly builds.
+  - Atlas3D: community legacy-GPU work.
+  - llama.cpp (ggml-org, MIT): inference engine built for sm_70/sm_61/gfx906.
+  - vLLM (Apache-2.0), PyTorch (BSD-3-Clause), Ollama (MIT): referenced as comparison baselines.
+
+NVIDIA CUDA and AMD ROCm components are governed by their vendors' licenses and are
+NOT redistributed by this repository; stacks are built from recipe.
