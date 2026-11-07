@@ -1,0 +1,35 @@
+# CITATION.cff for Afterlife (Citation File Format 1.2.0).
+# `repository-code`, `url`, `doi` and `date-released` are intentionally absent:
+# nothing is published yet (build rule 1). Fill them in at release time.
+cff-version: 1.2.0
+message: "If you use this software, please cite it using the metadata below."
+title: "Afterlife: a pinned, tested inference stack for abandoned datacenter GPUs"
+abstract: >-
+  Afterlife is a pinned, tested distribution (not a deep fork) for datacenter
+  GPUs that CUDA 13, PyTorch 2.15, vLLM and ROCm 7 stopped shipping for:
+  sm_70 (Tesla V100), sm_61 (Pascal, via a GTX 1060 proxy) and gfx906
+  (Radeon Instinct MI50, 16 GB board), with an RTX 3060 as a supported
+  control. It ships `afterlife doctor` (a versioned cliff database that
+  reports what will break and the exact fix), per-architecture pinned
+  manifests and containers, and `afterlife bench`, a fixed-methodology
+  runner with a correctness gate. Results enter a public cliff matrix by
+  pull request only, each cell with a reproduce command.
+type: software
+authors:
+  - family-names: Boudreaux
+    given-names: Scott
+    affiliation: "Elyan Labs"
+license: Apache-2.0
+version: 0.1.0
+keywords:
+  - gpu
+  - inference
+  - llama.cpp
+  - vllm
+  - rocm
+  - cuda
+  - volta
+  - pascal
+  - gfx906
+  - mi50
+  - v100
