@@ -25,6 +25,11 @@ classifiers = [
 # Runtime is stdlib-only (tomllib on 3.11+, JSON fallback on 3.10).
 dependencies = []
 
+[project.urls]
+Homepage = "https://github.com/Scottcjn/afterlife"
+Source = "https://github.com/Scottcjn/afterlife"
+Issues = "https://github.com/Scottcjn/afterlife/issues"
+
 [project.optional-dependencies]
 yaml = ["PyYAML>=6"]
 dev = ["ruff", "mypy", "pytest"]
