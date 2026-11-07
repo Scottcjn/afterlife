@@ -30,6 +30,14 @@ class Adapter(ABC):
     #: Short stable identifier, e.g. ``"llama.cpp"``, ``"vllm"``, ``"mock"``.
     backend_name: str = "abstract"
 
+    #: Target architecture (e.g. ``sm_70``, ``gfx906``); set in every subclass.
+    _gpu_arch: str = "unknown"
+
+    @property
+    def gpu_arch(self) -> str:
+        """Static target architecture — safe to read during a dry run."""
+        return self._gpu_arch
+
     @abstractmethod
     def backend_version(self) -> str:
         """Return the backend's reported version string."""
