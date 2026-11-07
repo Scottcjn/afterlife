@@ -290,7 +290,7 @@ def rows_from_csv(text: str) -> list[Row]:
 
 
 # -- helpers ---------------------------------------------------------------
-def _opt_str(v: int | float | None) -> str:
+def _opt_str(v: float | None) -> str:
     return "" if v is None else repr(v)
 
 
