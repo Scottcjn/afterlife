@@ -1,0 +1,17 @@
+# Afterlife stack: control-sm86  (RTX 3060, the REFERENCE row)
+# STATUS HEADER: "current stable" snapshot as of 2026-11-06. Not built or run by Afterlife. This is the correctness
+# reference for perplexity/answer-set deltas, so pin it and do not let it drift: re-pin deliberately.
+id: control-sm86
+schema: 1
+arches: [sm_86]
+role: control
+os: ubuntu-24.04
+host_prereq:
+  driver: {family: R595, version: "595.80", url: "https://download.nvidia.com/XFree86/Linux-x86_64/595.80/NVIDIA-Linux-x86_64-595.80.run", confirmed: true, note: "latest.txt at survey; HTTP 200 on .run. Any recent driver fine; R580 also works for CUDA 13.0."}
+components:
+  cuda_toolkit: {version: "13.4.3", container_base: "nvidia/cuda:13.4.3-devel-ubuntu24.04", digest: "sha256:5626a7d0ecafe3e7c115a452f6b05f20f214f8509346196a7835b205dc5b7fd9", confirmed: true}
+  torch: {version: "2.15.0", source: "PyPI default wheel (pip install torch==2.15.0)", wheel_bytes: 539172785, pulls: ["nvidia-*-cu13 (cudnn 9.26.0.51, nccl 2.30.7)", "triton~=3.9.0"], python: "3.12", confirmed: true, note: "Exact CUDA 13.x minor inside the wheel not determined."}
+  llama_cpp: {repo: "https://github.com/ggml-org/llama.cpp", tag: b12182, commit: fd27b2034905f8dadd8bd6d2cc44595f4929d391, cmake: ["-DGGML_CUDA=ON", "-DCMAKE_CUDA_ARCHITECTURES=86"], license: MIT, confirmed: true, build_status: expected-to-build-untested}
+  vllm: {version: "latest stable at bench time -- pin on first successful run", status: "not pinned; evaluate in bench plan"}
+redistribution: {summary: "Same as nvidia-legacy: driver/CUDA not bundled; recipe only.", eula: "https://docs.nvidia.com/cuda/eula/index.html"}
+build: {dockerfile: Dockerfile, script: install.sh}

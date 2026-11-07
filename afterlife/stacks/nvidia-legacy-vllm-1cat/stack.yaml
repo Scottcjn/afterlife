@@ -1,0 +1,39 @@
+# Afterlife stack: nvidia-legacy-vllm-1cat  (sm_70 only) -- EVALUATED PATH, NOT A SUPPORT CLAIM
+# STATUS HEADER:
+#   - Separate environment from nvidia-legacy: 1Cat needs Python 3.12 + torch 2.10.0 + CUDA 12.8 toolkit (nvcc, for
+#     first-use JIT of FlashQLA/TileLang kernels). nvidia-legacy uses torch 2.14.0/cu126. They CANNOT share a venv.
+#   - 1Cat's headline numbers (e.g. 487 tok/s, 1224 tok/s at 8 concurrent) come from 4x V100-SXM2-32GB, TP4, NVLink,
+#     NVFP4 Qwen3.8-27B + DFlash2 speculative decoding. They say nothing about a single V100 or a PCIe/eGPU card.
+#     Afterlife quotes none of them as ours. A single-card result must come from `afterlife bench`.
+#   - Not built, not run here. sm_70 only; does NOT cover sm_61.
+id: nvidia-legacy-vllm-1cat
+schema: 1
+arches: [sm_70]
+credit: "1CatAI/1Cat-vLLM (Apache-2.0) -- we consolidate, not compete. Upstream project: vllm-project/vllm."
+os: ubuntu-24.04
+host_prereq:
+  driver: {family: R580, version: "580.196.07", note: "1Cat tested with 580.173.02 per upstream notes/prior-art; any R580 >= CUDA 12.8 capable should do (untested)."}
+components:
+  vllm_1cat:
+    version: "1.5.2"
+    release: https://github.com/1CatAI/1Cat-vLLM/releases/tag/v1.5.2
+    wheel: https://github.com/1CatAI/1Cat-vLLM/releases/download/v1.5.2/1cat_vllm-1.5.2%2Bcu128-cp312-cp312-linux_x86_64.whl
+    wheel_sha256: a27afc512cf29d4baa322366f92b32f1d0ddec6d7178b0bf4351ad00c1958baa   # from release SHA256SUMS
+    wheel_bytes: 282611930
+    tag_commit: 2bb8c2b9cd7c1696630b6be464052027f0dd0147
+    license: Apache-2.0
+    confirmed: true     # URLs + sha256 read from the release; wheel not downloaded here
+  python: "3.12"
+  torch: {version: "2.10.0", cuda: "12.8", note: "README 'Installation' states PyTorch 2.10.0 + CUDA 12.8 runtime deps; pip resolves it from the wheel's requirements (not independently re-checked)."}
+  cuda_toolkit: {version: "12.8.1", container_base: "nvidia/cuda:12.8.1-devel-ubuntu24.04", digest: "sha256:520292dbb4f755fd360766059e62956e9379485d9e073bbd2f6e3c20c270ed66"}
+not_used:
+  docker_tar: >
+    https://github.com/1CatAI/1Cat-vLLM/releases/download/v1.5.2/1cat-vllm-1.5.2-docker.tar.gz
+    (sha256 26d7861b...). Cited only. Its Dockerfile bundles a CUDA 12.8 compiler; we do not re-host it
+    and do not push derived images.
+redistribution:
+  summary: "1Cat code Apache-2.0. CUDA toolkit/driver proprietary: build locally from nvidia/cuda, never publish the image."
+build: {dockerfile: Dockerfile, script: install.sh}
+open_questions:
+  - Does the wheel run correctly on ONE 16GB PCIe V100 or an x4 eGPU V100? Unknown until bench.
+  - Models above are 4-GPU profiles; pick single-card-fit models for the bench plan.

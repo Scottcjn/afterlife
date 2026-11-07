@@ -1,0 +1,75 @@
+# Afterlife stack: gfx906  (Radeon VII / MI50 / MI60 / Pro VII)
+# STATUS HEADER:
+#   - Recipe written 2026-11-06 from upstream metadata. Nothing built or run by Afterlife.
+#   - The lab MI50 runs as a 16 GB board (32GB vBIOS reflash failed PSP); do not assume 32 GB.
+#   - The TheRock gfx906 packages are a THIRD-PARTY rebuild (mixa3607/ML-gfx906, MIT) served from their own APT repo
+#     (s3.arkprojects.space). Trust = trust mixa3607. A from-source TheRock build recipe is linked, not scripted here.
+#   - HONEST BASELINE: Vulkan (mainline llama.cpp, RADV). Anything HIP must beat Vulkan on the same card/model to be worth it.
+#     Vulkan numbers are not measured by Afterlife yet.
+#   - TheRock "7.12 nightly" from the SPEC is stale; mixa's current builds are 7.14 / 10.0 / 10.1. 7.14 pinned, 10.1 = test target.
+#   - llama.cpp HIP on mainline is "expected to build, untested". Patched gfx906 forks listed below are faster-in-theory, unmeasured here.
+#   - hipBLASLt has NO gfx906 device library; rocBLAS does. INT8 torch._int_mm paths are therefore unreliable (mixa HIPBLASLT-GFX906.md).
+id: gfx906
+schema: 1
+arches: [gfx906]
+os: ubuntu-24.04
+credit: "mixa3607/ML-gfx906 (MIT) for TheRock gfx906 builds; TheRock/ROCm (AMD) upstream; nlzy, ai-infos, ttdxq for vLLM lineage; sixvolts, milpster for llama.cpp gfx906 patches."
+host_prereq:
+  kernel_driver: "amdgpu kernel driver (in-kernel or amdgpu-dkms); user-space ROCm comes from the packages below. Do NOT mix AMD's official apt repo with the gfx906 repo (package conflicts, per upstream)."
+  groups: [video, render]
+components:
+  rocm_therock:
+    primary:
+      version: "7.14.0-gfx906+20261018172427"
+      apt_repo: https://s3.arkprojects.space/apt-gfx906/ubuntu
+      apt_key: https://s3.arkprojects.space/apt-gfx906/ubuntu/gpg
+      packages: [amdrocm7.14, amdrocm-core-sdk7.14, amdrocm7.14-gfx906, amdrocm-core-sdk7.14-gfx906]
+      metapackage_sha256: c512f978b7cbf7eed7f0b0a59ab5efb41b21801f8fd50731a47419d2e6afc07a   # amdrocm7.14-gfx906 .deb, from Packages index
+      confirmed: true    # Packages index read; amdrocm7.14-gfx906 at exactly this version; install not run
+    test_target: {version: "10.1.0-gfx906+20261018172427", note: "mixa lists 7.14, 10.0, 10.1 as OK; Afterlife has not tried 10.x"}
+    legacy_fallback:
+      version: "ROCm 6.4.4 (official) + restored Tensile files"
+      apt_repo: https://repo.radeon.com/rocm/apt/6.4.4   # suite noble, Version 6.4.4 (InRelease read)
+      tensile_files: https://github.com/mixa3607/ML-gfx906/releases/download/rocm-tensile-files/tensile-files-6.4.4.tgz
+      tensile_sha256: f8f5d076fd9933809b4179828ee8c961b28a08a693c572fb9c79d78ecefddd13   # downloaded and hashed here; plain tar despite .tgz, 211 entries, 156 gfx906
+      extract_to: /opt/rocm/lib/rocblas/library
+      confirmed: true
+      note: "mixa marks the tensile releases Deprecated and legacy builds unsupported since 20260802001858. Use only if TheRock misbehaves on your host."
+  llama_cpp:
+    hip_mainline:
+      repo: https://github.com/ggml-org/llama.cpp
+      tag: b12182
+      commit: fd27b2034905f8dadd8bd6d2cc44595f4929d391
+      cmake: ["-DGGML_HIP=ON", "-DGPU_TARGETS=gfx906", "-DCMAKE_BUILD_TYPE=Release"]
+      license: MIT
+      confirmed: true
+      build_status: expected-to-build-untested
+    hip_patched_forks:        # preferred over no-license forks; none validated by Afterlife
+      - {repo: "https://github.com/sixvolts/llamacpp-gfx906-furnace", branch: gfx906-perf, head_seen: 17be77b70edd08c7f6437413fec3959b1000a5ee, license: MIT, confirmed: true, status: "HEAD at survey; pin a commit after first bench"}
+      - {repo: "https://github.com/milpster/gfx906-llama-cpp", branch: master, head_seen: 1373e889a4d5c69f453fe82c96332585f3d2b960, license: MIT, confirmed: true, status: "HEAD at survey; last push 2026-09-30"}
+    vulkan_baseline:
+      repo: https://github.com/ggml-org/llama.cpp
+      commit: fd27b2034905f8dadd8bd6d2cc44595f4929d391
+      cmake: ["-DGGML_VULKAN=ON", "-DCMAKE_BUILD_TYPE=Release"]
+      apt: [libvulkan-dev, glslc, mesa-vulkan-drivers, vulkan-tools]
+      role: "honest baseline column for every AMD row"
+      build_status: expected-to-build-untested
+    prebuilt_cited_not_vendored:
+      - "docker.io/mixa3607/llama.cpp-gfx906:v0.9.0-rocm-10.1-20261018172427 (digest sha256:06abff45bb48e675c46eb4905b2cf316ad70fb3c3b2d32ab5da3554dd8b81fe5) -- a quick way to see if gfx906 runs at all"
+    not_used:
+      - "mi50-rocm7 and xxDoman builds: no license -> cited only, not vendored"
+  torch_optional:
+    source: "mixa3607 wheels: https://s3.arkprojects.space/py-gfx906/rocm7.14/torch-v2.14.1+gfx906.20261018172427/index.txt"
+    files: [torch-2.14.1+gfx906.20261018172427-cp312-cp312-linux_x86_64.whl, torchvision-0.29.0+gfx906.20261018172427-cp312-cp312-linux_x86_64.whl]
+    python: "3.12"
+    confirmed: true     # index.txt read; wheels not downloaded
+vllm:
+  see: gfx906-vllm
+  note: "Separate stack: mixa/ai-infos vLLM images sit on their own ROCm base, not necessarily this TheRock 7.14 install."
+redistribution:
+  summary: >
+    ROCm/TheRock components are open source (mostly MIT / permissive; AMD firmware and some pieces differ). Review
+    https://rocm.docs.amd.com/en/latest/about/license.html before pushing any image. We still ship recipes only: the packages
+    are third-party rebuilds hosted by mixa3607 and we do not mirror them. No NVIDIA components here.
+  reviewed: "URL reachable only; license text NOT read in full -- treat as unreviewed until Scott confirms."
+build: {dockerfile: Dockerfile, script: install.sh}

@@ -1,0 +1,33 @@
+# Afterlife stack: gfx906-vllm  (MI50 / Radeon VII / MI60) -- EVALUATED PATH, NOT A SUPPORT CLAIM
+# STATUS HEADER:
+#   - Not built or run by Afterlife. Quality/speed on a 16GB MI50 unknown; upstream examples use 2x MI50/MI60 32GB.
+#   - SEPARATE from stack `gfx906`: the vLLM image brings its own ROCm userland (pytorch 2.13.0 on ROCm 7.14 in the
+#     ai-infos image; mixa3607's rebuild is on ROCm 7.2.1). Do not assume it shares the host TheRock 7.14 packages,
+#     and do not run both in one environment.
+#   - nlzy/vllm-gfx906 is ARCHIVED (last push 2026-02-20, v0.9.2+gfx906.update4). Credited as origin, not recommended.
+#   - Quantization: upstream guidance is GPTQ/AWQ W4A16; MoE and unquantized are slow (nlzy README).
+id: gfx906-vllm
+schema: 1
+arches: [gfx906]
+credit: "nlzy (origin of vllm-gfx906, Apache-2.0), ai-infos (vllm-gfx906-mobydick, triton-gfx906, flash-attention-gfx906), mixa3607 (image builds), ttdxq (gfx906-vllm). We consolidate; they do the work."
+os: ubuntu-24.04
+components:
+  primary:
+    name: ai-infos/vllm-gfx906-mobydick
+    repo: https://github.com/ai-infos/vllm-gfx906-mobydick
+    license: Apache-2.0
+    head_seen: e7b96a5ee3799a6f9286834bbc911375a75db64b     # main HEAD at survey; NOT proven to equal the image's build commit
+    image: aiinfos/vllm-gfx906-mobydick:v0.30.0.x-rocm7.14-pytorch2.13.0-260726fedb27
+    image_digest: sha256:b7f62e582dcbf3e2d333925f6d325e0a521dca8778fdfd76b284e5ff8244f27c
+    image_pushed: "2026-10-08"
+    build_from_source: "git clone repo; MAX_JOBS=16 bash build_and_push_docker.sh  (builds locally, pushes only with --push); dependency pins in docker/gfx906-build.env"
+    confirmed: true      # repo, README, docker tag+digest read; not built/run
+  alternatives:
+    - {name: ttdxq/gfx906-vllm, repo: "https://github.com/ttdxq/gfx906-vllm", branch: gfx906/main, head_seen: 80f14aca2c9369940395c8829fb94df0d8a0c1c1, license: Apache-2.0, confirmed: true, status: "not evaluated"}
+    - {name: "mixa3607 vllm-v2 image (ROCm 7.2.1 base)", image: "docker.io/mixa3607/vllm-gfx906:0.20.1-rocm-7.2.1-aiinfos", repo: "https://github.com/mixa3607/ML-gfx906/tree/master/vllm-v2", license: MIT, confirmed: true, note: "mixa marks vLLM 'Paused'; built from ai-infos commit eb450bd, triton v3.6.0+gfx906, flash-attention 0ac8e77. Older vLLM (0.20.1)."}
+    - {name: nlzy/vllm-gfx906, repo: "https://github.com/nlzy/vllm-gfx906", tag: "v0.9.2+gfx906.update4", tag_commit: 346bc8659aa20a46d6c84a89d88ff6eba5f882b5, license: Apache-2.0, status: ARCHIVED, confirmed: true}
+host_prereq: {rocm_userland: "not required on host (in image); /dev/kfd + /dev/dri + amdgpu kernel driver required", groups: [video, render]}
+redistribution:
+  summary: "Apache-2.0 code; ROCm userland is open source. We do not mirror the image; recipe builds from the upstream repo, or pulls upstream's own image at the user's option."
+  reviewed: "licenses via GitHub API only (Apache-2.0 / MIT); ROCm component licenses not reviewed in full"
+build: {dockerfile: Dockerfile, script: install.sh}
