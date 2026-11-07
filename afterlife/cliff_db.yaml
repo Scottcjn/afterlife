@@ -1,0 +1,228 @@
+# Afterlife cliff database -- versioned support-cutoff facts for stranded GPUs.
+#
+# Each entry describes ONE support "cliff": a component version (or driver
+# branch) at/after which a set of GPU architectures stops being supported, the
+# exact fix (the last pinned version that works), a SOURCE url, and a
+# `confidence` flag recording how well we could verify it against a vendor
+# primary source on 2026-11-06.
+#
+# confidence values:
+#   confirmed  -- verified against a vendor / upstream primary source (url below)
+#   partial    -- the plan/direction is sourced, but the exact version or the
+#                 "fully removed" status is nuanced or contradicted downstream
+#   unverified -- could NOT confirm from a primary source; treat with caution
+#
+# `component` keys map to what doctor detects: cuda, nvidia_driver, torch,
+# vllm, ollama, rocm, flash_attn.
+# `affected_arch` lists sm_XX (NVIDIA compute capability) or gfxXXX (AMD).
+# `cliff_version` is the FIRST version that breaks the arch (>= is broken).
+# `last_good_version` is the newest version that still works (the pin).
+
+schema_version: 1
+as_of: "2026-11-06"
+
+# `stock_latest`: the current "install the latest" version seen in the wild on
+# 2026-11-06 (reported by the coordinator). doctor compares against these when a
+# tool is NOT installed, to answer "what happens if you just pip/ollama install
+# latest?". These are the versions that SIT PAST the cliffs below.
+stock_latest:
+  torch: "2.15.0"
+  vllm: "0.32.0"
+  ollama: "0.40.15"
+
+cliffs:
+  - id: cuda13_drops_pre_turing
+    title: "CUDA 13.0 drops offline compilation + library support for pre-Turing"
+    component: cuda
+    affected_arch: [sm_50, sm_52, sm_53, sm_60, sm_61, sm_62, sm_70, sm_72]
+    cliff_version: "13.0"
+    last_good_version: "12.9"
+    breaks: >-
+      CUDA Toolkit 13.0 removes OFFLINE COMPILATION and library (cuFFT, etc.)
+      support for architectures below compute capability 7.5 (Maxwell sm_50/52,
+      Pascal sm_60/61, Volta sm_70). nvcc in 13.x can no longer target these
+      archs; 12.x toolkits can still build for them.
+    fix: >-
+      Pin CUDA Toolkit 12.9 (the last toolkit that can target sm_50-sm_72) and
+      use driver branch R580. Build frameworks against cu12.x, not cu13.
+    confidence: confirmed
+
+    source_confirmed: true
+    source: "https://developer.nvidia.com/blog/navigating-gpu-architecture-support-a-guide-for-nvidia-cuda-developers/"
+    source_note: >-
+      NVIDIA dev blog + CUDA Features Archive: "Architecture support for
+      Maxwell, Pascal, and Volta is considered feature-complete ... offline
+      compilation and library support for these architectures have been removed
+      in CUDA Toolkit 13.0." Runtime execution via the R580 driver is unaffected.
+
+  - id: r580_last_driver_branch
+    title: "R580 is the last NVIDIA driver branch for pre-CC-7.5 GPUs"
+    component: nvidia_driver
+    affected_arch: [sm_50, sm_52, sm_53, sm_60, sm_61, sm_62, sm_70, sm_72]
+    cliff_version: "590"
+    last_good_version: "580"
+    breaks: >-
+      Driver branch 580 is the final branch to support GPUs before compute
+      capability 7.5. Branches after 580 ship open-kernel ("open-only") modules
+      that do not cover Maxwell/Pascal/Volta, so those cards lose driver support.
+    fix: >-
+      Stay on the R580 driver branch (580.xx; 580.173.02 is the build 1Cat-vLLM
+      tested for sm_70). NVIDIA states R580 supports these GPUs through mid-year
+      2028. Do not upgrade past the 580 branch.
+    confidence: confirmed
+
+    source_confirmed: true
+    source: "https://developer.nvidia.com/blog/navigating-gpu-architecture-support-a-guide-for-nvidia-cuda-developers/"
+    source_note: >-
+      NVIDIA dev blog: "This will be the final branch that supports GPUs before
+      CC 7.5 ... supported until mid-year 2028." Branch number 590 is used here
+      as the first-breaking sentinel (anything newer than the 580 branch).
+
+  - id: torch215_drops_pre_turing_wheels
+    title: "PyTorch 2.15 drops cu126 wheels for Maxwell/Pascal/Volta"
+    component: torch
+    affected_arch: [sm_50, sm_52, sm_60, sm_61, sm_70]
+    cliff_version: "2.15.0"
+    last_good_version: "2.14.0"
+    breaks: >-
+      PyTorch 2.14 is the last release to ship any CUDA 12.x (cu126) prebuilt
+      wheels. From 2.15, CUDA 12.6 is build-from-source only, so `pip install
+      torch` 2.15+ carries no kernels for sm_50/60/70 and fails with an
+      unsupported-arch / "no kernel image is available" error on these cards.
+    fix: >-
+      Pin `torch==2.14.0` installed from the cu126 index
+      (--index-url https://download.pytorch.org/whl/cu126), or build torch from
+      source against CUDA 12.x for these archs.
+    confidence: confirmed
+
+    source_confirmed: true
+    source: "https://dev-discuss.pytorch.org/t/notice-cuda-12-6-wheels-will-no-longer-be-published-from-pytorch-2-15-drops-maxwell-pascal-volta/3432"
+    source_note: >-
+      PyTorch dev-discuss: "PyTorch 2.14 is the last release to ship any CUDA
+      12.x wheels"; "PyTorch will stop publishing CUDA 12.6 binaries in 2.15."
+      Maxwell sm_50 / Pascal sm_60 / Volta sm_70 listed as dropped.
+
+  - id: vllm_dropped_v100_sm70
+    title: "vLLM deprecated V100 / sm_70 (V0 engine removal, v0.10, Jul 2025)"
+    component: vllm
+    affected_arch: [sm_70, sm_72]
+    cliff_version: "0.10.0"
+    last_good_version: "0.9.x"
+    breaks: >-
+      vLLM's V0-engine deprecation (announced v0.10.0, 2025-07-01; V0 code fully
+      removed ~v0.11.0, Aug 2025) lists "V100 support" under features
+      permanently dropped. Stock latest vLLM refuses / lacks tuned kernels for
+      sm_70 on the V1 engine for many models.
+    fix: >-
+      Use the community 1Cat-vLLM SM70 fork + wheel (credit upstream 1CatAI),
+      or pin vLLM <= 0.9.x. Evaluate the V1-engine path per model, since some
+      V1 paths may still run on older GPUs after PR #24022.
+    confidence: partial
+
+    source_confirmed: false
+    source: "https://github.com/vllm-project/vllm/issues/18571"
+    source_note: >-
+      Issue #18571 lists "V100 support" under "Features Permanently Dropped" and
+      dates v0.10.0 to 2025-07-01, but it does NOT name sm_70 and does NOT tie
+      the V100 drop to a specific version; maintainers later commented V1
+      "should be supported already" on older GPUs. Exact removal version is
+      nuanced -- treat as a deprecation direction, not a hard version cutoff.
+
+  - id: rocm7_drops_gfx906
+    title: "ROCm 7.x lists gfx900/gfx906 (Vega/MI50) as unsupported"
+    component: rocm
+    affected_arch: [gfx900, gfx906]
+    cliff_version: "7.0.0"
+    last_good_version: "6.3.x"
+    breaks: >-
+      ROCm 7.0+ Linux system-requirements tables mark MI50/Radeon VII/Radeon PRO
+      VII (gfx906) and MI25 (gfx900) with an explicit NOT-supported mark.
+      Prebuilt ROCm libraries are not official for these cards; HIP may still run
+      but library kernels can error at runtime.
+    fix: >-
+      For gfx906, use TheRock 7.x nightly community builds (credit TheRock), or
+      ROCm 6.4.x with restored gfx906 Tensile/rocBLAS logic files, plus a
+      llama.cpp HIP build and a Vulkan fallback. ROCm 5.7 was the last fully
+      supported release for gfx906.
+    confidence: confirmed
+
+    source_confirmed: true
+    source: "https://rocm.docs.amd.com/projects/install-on-linux/en/docs-7.0.0/reference/system-requirements.html"
+    source_note: >-
+      ROCm 7.0.0 (and 7.2.x) Linux system-requirements tables show MI50 (gfx906)
+      and MI25 (gfx900) unsupported; already unsupported in 6.4.x tables.
+      gfx906 entered maintenance mode in ROCm 6.0; 5.7 was last fully supported.
+
+  - id: rocm64_drops_gfx906_tensile
+    title: "ROCm 6.4 stopped shipping gfx906 Tensile kernels (UNVERIFIED)"
+    component: rocm
+    affected_arch: [gfx906]
+    cliff_version: "6.4.0"
+    last_good_version: "6.3.x"
+    breaks: >-
+      Reported: ROCm 6.4 stopped shipping prebuilt gfx906 Tensile logic files, so
+      rocBLAS GEMM has no tuned gfx906 kernels and falls back / errors. This is
+      what makes MI50 need restored Tensile files on 6.4.x.
+    fix: >-
+      Use ROCm 6.4.x with gfx906 Tensile/rocBLAS logic files restored from a
+      community build (e.g. mixa3607/ML-gfx906, credit upstream), or prefer
+      TheRock 7.x nightly / a Vulkan fallback.
+    confidence: unverified
+
+    source_confirmed: false
+    source: "https://github.com/mixa3607/ML-gfx906"
+    source_note: >-
+      Could NOT confirm from AMD primary docs on 2026-11-06. ROCm 6.4.3 notes
+      list Tensile 4.43.0 / rocBLAS 4.4.1 without mentioning gfx906 logic-file
+      removal. Only third-party leads (mixa3607 "rocm-tensile marked as
+      deprecated"). gfx906 deprecation pre-6.4 IS documented (maint. since 6.0).
+
+  - id: ollama013_dropped_gfx906
+    title: "Ollama 0.13.0 dropped gfx906 (UNVERIFIED -- not in release notes)"
+    component: ollama
+    affected_arch: [gfx906]
+    cliff_version: "0.13.0"
+    last_good_version: "0.12.x"
+    breaks: >-
+      Claimed: Ollama 0.13.0 dropped gfx906 (Radeon VII / MI50) from its ROCm
+      build targets, so stock Ollama no longer detects the card and skips it.
+    fix: >-
+      Run Ollama with the Vulkan backend (OLLAMA_VULKAN=1) as a fallback, pin
+      Ollama <= 0.12.x, or use a community AMD fork (e.g. ollama-for-amd) that
+      still ships gfx906.
+    confidence: unverified
+
+    source_confirmed: false
+    source: "https://github.com/ollama/ollama/releases/tag/v0.13.0"
+    source_note: >-
+      Could NOT confirm on 2026-11-06. The v0.13.0 release notes mention only
+      "Improved VRAM information detection for AMD GPUs" and a Vulkan library
+      fix -- NO statement about dropping gfx906. User reports note stock Ollama
+      does not natively detect Radeon VII and suggest OLLAMA_VULKAN=1. Version
+      0.13.0 as the specific drop point is unconfirmed and may be inaccurate.
+
+  - id: flashattn2_needs_sm80
+    title: "FlashAttention-2 needs sm_80+ (Ampere); no Volta/Pascal kernels"
+    component: flash_attn
+    affected_arch: [sm_50, sm_52, sm_60, sm_61, sm_70, sm_72, sm_75]
+    cliff_version: "2.0.0"
+    last_good_version: null
+    breaks: >-
+      The official flash-attn (FlashAttention-2) package ships CUDA kernels only
+      for compute capability 8.0+ (Ampere/Ada/Hopper). It uses Ampere+ MMA
+      instructions, so Volta (sm_70), Pascal (sm_61) and earlier have no kernels;
+      Turing (sm_75) is best-effort / historically "coming soon", not reliable.
+    fix: >-
+      Do not rely on flash-attn 2 on these cards. Use the Triton port
+      `flash-attn-triton` (Turing-capable), xformers memory-efficient attention,
+      or the framework's default (non-flash) attention. FlashAttention-3 targets
+      Hopper only.
+    confidence: confirmed
+
+    source_confirmed: true
+    source: "https://github.com/Dao-AILab/flash-attention"
+    source_note: >-
+      FlashAttention README/notes: FA2 supports Ampere/Ada/Hopper (A100, RTX
+      3090/4090, H100); Volta unsupported (MMA requires >= Ampere, per
+      FastAttention arXiv:2410.16663). Corroborated by multiple third-party
+      sources; Turing status conflicts across sources -> flagged best-effort.

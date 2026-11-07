@@ -1,0 +1,60 @@
+# Afterlife stack: nvidia-legacy  (sm_70 V100, sm_61 Pascal)
+# STATUS HEADER (read first):
+#   - Written 2026-11-06 from upstream metadata only. NOTHING here has been built or run by Afterlife yet.
+#   - sm_70: V100 16GB PCIe / SXM2 32GB are the intended targets (lab-owned, untested through this recipe).
+#   - sm_61: PROXY. The lab target is a GTX 1060 standing in for a Tesla P40. A 1060 is not a P40
+#     (different VRAM, no fast FP16 on either, different clocks). Results transfer only loosely.
+#   - llama.cpp is mainline (no sm_70 fork; the "Atlas3D" fork was not found): "expected to build, untested".
+#   - torch 2.14.0+cu126 shipping sm_70/sm_61 kernels is taken from the SPEC; NOT verified by inspecting the wheel.
+#   - vLLM is a SEPARATE stack (nvidia-legacy-vllm-1cat): different CUDA/torch/Python, cannot share an env.
+id: nvidia-legacy
+schema: 1
+arches: [sm_70, sm_61]
+os: ubuntu-24.04
+host_prereq:
+  driver:
+    family: R580            # last branch that supports Maxwell/Pascal/Volta
+    version: "580.196.07"   # newest 580.x listed on download.nvidia.com at survey time
+    url: https://download.nvidia.com/XFree86/Linux-x86_64/580.196.07/NVIDIA-Linux-x86_64-580.196.07.run
+    confirmed: true         # HTTP 200 (not downloaded, sha256 not recorded)
+    note: Driver lives on the host. It is never put into an image.
+components:
+  cuda_toolkit:
+    version: "12.9.1"
+    url: https://developer.download.nvidia.com/compute/cuda/12.9.1/local_installers/cuda_12.9.1_575.57.08_linux.run
+    apt_keyring: https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/cuda-keyring_1.1-1_all.deb
+    container_base: nvidia/cuda:12.9.1-devel-ubuntu24.04
+    container_base_digest: sha256:020bc241a628776338f4d4053fed4c38f6f7f3d7eb5919fecb8de313bb8ba47c
+    confirmed: true         # installer URL HTTP 200; Docker Hub tag+digest read from API
+  torch:
+    version: "2.14.0+cu126"
+    torchvision: "0.29.0+cu126"   # its wheel metadata requires torch==2.14.0 (read from .whl.metadata)
+    index: https://download.pytorch.org/whl/cu126
+    wheel: https://download.pytorch.org/whl/cu126/torch-2.14.0%2Bcu126-cp312-cp312-manylinux_2_28_x86_64.whl
+    wheel_bytes: 869177930
+    python: "3.12"
+    confirmed: true         # wheel exists, metadata read. sm_70/sm_61 kernel inclusion NOT verified.
+    pulls_from_pypi: [nvidia-cudnn-cu12==9.10.2.21, nvidia-nccl-cu12==2.29.3, nvidia-cusparselt-cu12==0.7.1, nvidia-nvshmem-cu12==3.4.5, "triton~=3.8.0"]
+  llama_cpp:
+    repo: https://github.com/ggml-org/llama.cpp
+    tag: b12182
+    commit: fd27b2034905f8dadd8bd6d2cc44595f4929d391
+    cmake: ["-DGGML_CUDA=ON", '-DCMAKE_CUDA_ARCHITECTURES=70;61', "-DCMAKE_BUILD_TYPE=Release"]
+    license: MIT
+    confirmed: true         # tag resolved via git ls-remote; build NOT run
+    build_status: expected-to-build-untested
+vllm:
+  see: nvidia-legacy-vllm-1cat
+  reason: 1Cat-vLLM needs CUDA 12.8 toolkit + torch 2.10.0 + Python 3.12 -> conflicts with torch 2.14/cu126. Separate env.
+redistribution:
+  summary: >
+    NVIDIA driver, CUDA toolkit (nvcc etc.), cuDNN are proprietary. CUDA EULA lets only the Attachment A runtime
+    files travel inside an application, unmodified. Afterlife therefore ships RECIPES only: no pushed image contains
+    the driver or full toolkit. Users build locally from nvidia/cuda (which NVIDIA itself publishes). torch wheels
+    come straight from pytorch.org / PyPI at install time.
+  eula: https://docs.nvidia.com/cuda/eula/index.html
+  reviewed: "2026-11-06 (read excerpts of Distribution Requirements + Attachment A; not legal advice)"
+build:
+  dockerfile: Dockerfile
+  script: install.sh
+  verify: "python -c 'import torch;print(torch.__version__, torch.cuda.get_device_capability(0))' ; llama-cli --version"
