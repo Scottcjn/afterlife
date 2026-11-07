@@ -1,0 +1,13 @@
+repo	archived	stars	license	pushed_at
+1CatAI/1Cat-vLLM	false	1475	Apache-2.0	2026-11-06T15:36:50Z
+renne/1cat-vllm-v100-docker	false	12	Apache-2.0	2026-07-22T10:14:37Z
+mixa3607/ML-gfx906	false	376	MIT	2026-11-06T20:06:13Z
+nlzy/vllm-gfx906	true	436	Apache-2.0	2026-02-20T09:40:41Z
+ttdxq/gfx906-vllm	false	50	Apache-2.0	2026-10-28T14:28:01Z
+ai-infos/vllm-gfx906-mobydick	false	94	Apache-2.0	2026-10-08T22:30:32Z
+ROCm/TheRock	false	1430	MIT	2026-11-07T02:16:47Z
+sasha0552/pascal-pkgs-ci	false	220	MIT	2025-08-23T13:22:47Z
+nullkalahar/mi50-rocm7	false	11	none	2026-10-04T12:16:06Z
+sixvolts/llamacpp-gfx906-furnace	false	23	MIT	2026-11-07T01:21:54Z
+milpster/gfx906-llama-cpp	false	31	MIT	2026-09-30T10:28:48Z
+xxDoman/llama-mi50-rocm7.2	false	0	none	2026-11-06T00:54:34Z

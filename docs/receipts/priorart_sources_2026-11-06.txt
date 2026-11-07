@@ -1,0 +1,7 @@
+Collected 2026-11-06 (UTC) by af-priorart via `gh api` (read-only) and WebFetch/WebSearch. No code cloned or built.
+Primary: GitHub REST repos/<r>, /releases, /commits, /readme for each repo in priorart_api_snapshot_2026-11-06.tsv.
+Release asset facts: 1Cat-vLLM v1.5.2 assets: 1cat_vllm-1.5.2+cu128-cp312-cp312-linux_x86_64.whl (282,611,930 B), 1cat-vllm-1.5.2-docker.tar.gz, SHA256SUMS.
+TheRock: RELEASES.md (ROCm/TheRock main) lists gfx906 as device-gfx906; tags therock-7.12 (2026-03-26) ... therock-10.1 (2026-10-05).
+negativo17: https://negativo17.org/repos/ shows nvidia-580/ dir (2026-09-10), fedora/epel-nvidia-580.repo (2025-11-19); no version numbers visible.
+NVIDIA R580 last for Maxwell/Pascal/Volta: https://www.phoronix.com/news/NVIDIA-580-Linux-Driver-Last-HW (via web search; official NVIDIA page not fetched).
+Latest stock versions seen: torch v2.15.0 (2026-10-28), v2.14.0 (2026-09-02), v2.14.1 (2026-09-30); vLLM v0.32.0 (2026-10-18), v0.33.0rc3 (2026-11-02); llama.cpp b12182 (2026-11-07); ollama v0.40.15 (2026-11-03).
