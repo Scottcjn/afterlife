@@ -2,8 +2,8 @@
 
 **A pinned, tested inference stack for datacenter GPUs their vendors stopped shipping for.**
 
-Status: **v0.1 pre-release, unbenchmarked.** Nothing in this repository has
-been published, and every performance cell in the matrix below is a template
+Status: **v0.1 pre-release, unbenchmarked.** No benchmark result from this
+repository has been published yet, and every performance cell in the matrix below is a template
 slot waiting for a measurement. Read the limits before the pitch.
 
 ---
